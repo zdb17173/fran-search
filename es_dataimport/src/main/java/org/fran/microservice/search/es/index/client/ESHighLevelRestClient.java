@@ -16,7 +16,7 @@ import java.util.List;
  * @Create date 2018/6/19
  */
 @Configuration
-@ConfigurationProperties("es")
+@ConfigurationProperties("esrest")
 public class ESHighLevelRestClient extends AbstractEsComponent{
     String cluster;
     List<EsServer> servers;
@@ -37,5 +37,14 @@ public class ESHighLevelRestClient extends AbstractEsComponent{
 
     public RestHighLevelClient getRestHighLevelClient(){
         return client;
+    }
+
+
+    public List<EsServer> getServers() {
+        return servers;
+    }
+
+    public void setServers(List<EsServer> servers) {
+        this.servers = servers;
     }
 }

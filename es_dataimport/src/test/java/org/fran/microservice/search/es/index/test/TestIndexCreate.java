@@ -1,6 +1,6 @@
 package org.fran.microservice.search.es.index.test;
 
-import org.fran.microservice.search.es.index.service.transport.IndexBuildService;
+import org.fran.microservice.search.es.index.service.highlevelrest.IndexBuildHighLevelRestService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -16,11 +16,11 @@ import javax.annotation.Resource;
 @SpringBootTest
 public class TestIndexCreate {
     @Resource
-    IndexBuildService indexBuildService;
+    IndexBuildHighLevelRestService indexBuildHighLevelRestService;
 
     @Test
     public void test(){
 
-        indexBuildService.indexAll();
+        indexBuildHighLevelRestService.indexAll();
     }
 }

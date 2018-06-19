@@ -3,7 +3,8 @@ package org.fran.microservice.search.es.index.test;
 import org.fran.microservice.search.es.index.bo.News;
 import org.fran.microservice.search.es.index.bo.QueryCondition;
 import org.fran.microservice.search.es.index.bo.Result;
-import org.fran.microservice.search.es.index.service.transport.IndexQueryService;
+import org.fran.microservice.search.es.index.service.highlevelrest.IndexQueryHighLevelRestService;
+import org.fran.microservice.search.es.index.service.transport.IndexQueryTransportService;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -20,14 +21,21 @@ import java.util.List;
 @SpringBootTest
 public class TestIndexQuery {
     @Resource
-    IndexQueryService indexQueryService;
+    IndexQueryHighLevelRestService indexQueryHighLevelRestService;
+    @Resource
+    IndexQueryTransportService indexQueryTransportService;
 
     @Test
     public void test(){
         QueryCondition condition = new QueryCondition();
         condition.setKeyword("man");
+        condition.setPage(0);
+        condition.setSize(10);
 
-        Result<List<News>> r = indexQueryService.query(condition);
+        Result<List<News>> r = indexQueryHighLevelRestService.query(condition);
         System.out.println(r);
+
+        Result<List<News>> rr = indexQueryTransportService.query(condition);
+        System.out.println(rr);
     }
 }
