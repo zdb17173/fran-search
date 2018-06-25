@@ -14,6 +14,8 @@ public class QueryCondition implements Serializable{
     Highlight highlight;
     Sort sort;
 
+    boolean debug =false;
+
     public Sort getSort() {
         return sort;
     }
@@ -68,5 +70,13 @@ public class QueryCondition implements Serializable{
 
     public void setHighlight(Highlight highlight) {
         this.highlight = highlight;
+    }
+
+    public boolean isDebug() {
+        return debug;
+    }
+
+    public void setDebug(boolean debug) {
+        this.debug = debug;
     }
 }

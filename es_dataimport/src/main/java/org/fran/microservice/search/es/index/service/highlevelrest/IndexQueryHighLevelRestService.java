@@ -9,11 +9,21 @@ import org.elasticsearch.common.text.Text;
 import org.elasticsearch.common.unit.TimeValue;
 import org.elasticsearch.index.query.BoolQueryBuilder;
 import org.elasticsearch.index.query.QueryBuilders;
+import org.elasticsearch.index.query.QueryStringQueryBuilder;
+import org.elasticsearch.index.query.ScriptQueryBuilder;
+import org.elasticsearch.index.query.functionscore.FunctionScoreQueryBuilder;
+import org.elasticsearch.index.query.functionscore.ScoreFunctionBuilder;
+import org.elasticsearch.index.query.functionscore.ScriptScoreFunctionBuilder;
+import org.elasticsearch.script.Script;
 import org.elasticsearch.search.SearchHit;
 import org.elasticsearch.search.SearchHits;
+import org.elasticsearch.search.aggregations.AggregationBuilder;
+import org.elasticsearch.search.aggregations.AggregationBuilders;
 import org.elasticsearch.search.builder.SearchSourceBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightBuilder;
 import org.elasticsearch.search.fetch.subphase.highlight.HighlightField;
+import org.elasticsearch.search.sort.ScoreSortBuilder;
+import org.elasticsearch.search.sort.ScriptSortBuilder;
 import org.elasticsearch.search.sort.SortBuilders;
 import org.elasticsearch.search.sort.SortOrder;
 import org.fran.microservice.search.es.index.bo.*;
@@ -22,9 +32,8 @@ import org.springframework.stereotype.Service;
 
 import javax.annotation.Resource;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
+import java.text.SimpleDateFormat;
+import java.util.*;
 import java.util.concurrent.TimeUnit;
 
 /**
@@ -42,14 +51,28 @@ public class IndexQueryHighLevelRestService {
             BoolQueryBuilder query = QueryBuilders.boolQuery();
 
             query = query
-                    .must(QueryBuilders.boolQuery().should(QueryBuilders.matchQuery("headline", condition.getKeyword()))
+                    .must(QueryBuilders.boolQuery().should(
+                            QueryBuilders.matchQuery("headline", condition.getKeyword()))
                             .should(QueryBuilders.matchQuery("newsDetail", condition.getKeyword()))
                             .should(QueryBuilders.matchQuery("content", condition.getKeyword()))
                     )
                     .mustNot(QueryBuilders.termQuery("newsType", 1));
 
+            Map<String, Object> param = new HashMap<>();
+            param.put("curDate", new Date().getTime()/86400000);
+
+            FunctionScoreQueryBuilder functionQuery = QueryBuilders.functionScoreQuery(
+                    query,
+                    new ScriptScoreFunctionBuilder(new Script(
+                            Script.DEFAULT_SCRIPT_TYPE,
+                            "expression" ,
+                            "_score + ( 180 - min(curDate - doc['publishDate']/86400000, 180) )/5 ",
+//                            "_score + log10(doc['publishDate']/86400)* 10 % 30",
+                            param))
+                    );
+
             SearchSourceBuilder sourceBuilder = new SearchSourceBuilder();
-            sourceBuilder.query(query);
+            sourceBuilder.query(functionQuery);
             sourceBuilder.from(condition.getPage() * condition.getSize());
             sourceBuilder.size(condition.getSize());
             sourceBuilder.timeout(new TimeValue(60, TimeUnit.SECONDS));
@@ -84,13 +107,22 @@ public class IndexQueryHighLevelRestService {
                 }
             }
 
+            sourceBuilder.aggregation(
+                    AggregationBuilders.sampler("my_sample")
+                        .subAggregation(AggregationBuilders.significantText("keyword", "headline"))
+            );
+
+//            sourceBuilder.scriptField("script_score", new Script("_score + doc['publishDate']/ 86400000 / 10000"));
 
             RestHighLevelClient client = eSHighLevelRestClient.getRestHighLevelClient();
 
             SearchRequest searchRequest = new SearchRequest();
             searchRequest.source(sourceBuilder);
 
+            System.out.println(sourceBuilder.toString());
+
             SearchResponse res = client.search(searchRequest);
+
             SearchHits hits = res.getHits();
             long total = hits.getTotalHits();
             SearchHit[] hit = hits.getHits();
@@ -98,6 +130,8 @@ public class IndexQueryHighLevelRestService {
             ObjectMapper mapper = new ObjectMapper();
 
             List<News> listRes = new ArrayList<>();
+
+            SimpleDateFormat d = new SimpleDateFormat("YYYY-MM-dd HH:mm:ss");
             for(SearchHit h : hit){
 
                 String s = h.getSourceAsString();
@@ -107,6 +141,11 @@ public class IndexQueryHighLevelRestService {
                     highLightHandle(h, vo);
 
                     listRes.add(vo);
+
+                    if(condition.isDebug()){
+                        System.out.println(h.getScore()+ "["+ d.format(vo.getPublishDate()) +"]["+ vo.getHeadline() +"]");
+                    }
+
                 } catch (IOException e) {
                     e.printStackTrace();
                 }

@@ -46,7 +46,7 @@ public class IndexBuildHighLevelRestService {
             int pageSize = 10;
             Condition condition = new Condition();
             ObjectMapper mapper = new ObjectMapper();
-            for(int i= 0 ; i< 100; i ++){
+            for(int i= 0 ; i< 10000; i ++){
                 condition.setOffset(i*pageSize);
                 condition.setPageNumber(i);
                 condition.setPageSize(pageSize);

@@ -28,14 +28,21 @@ public class TestIndexQuery {
     @Test
     public void test(){
         QueryCondition condition = new QueryCondition();
-        condition.setKeyword("man");
+        condition.setKeyword("EU approves RBS competition plan, lifting");
         condition.setPage(0);
         condition.setSize(10);
+        condition.setDebug(true);
+
+
+
+//        Result<List<News>> rr = indexQueryTransportService.query(condition);
+//        System.out.println(rr);
 
         Result<List<News>> r = indexQueryHighLevelRestService.query(condition);
-        System.out.println(r);
 
-        Result<List<News>> rr = indexQueryTransportService.query(condition);
-        System.out.println(rr);
+        for(News n : r.getData()){
+            System.out.println("["+ n.getId() +"] [" +  n.getPublishDate() + "] [" +  n.getHeadline() + "]");
+        }
+        System.out.println(r);
     }
 }
